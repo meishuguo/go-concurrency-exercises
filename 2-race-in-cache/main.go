@@ -8,7 +8,10 @@
 
 package main
 
-import "container/list"
+import (
+	"container/list"
+	"sync"
+)
 
 // CacheSize determines how big the cache can grow
 const CacheSize = 100
@@ -24,6 +27,7 @@ type KeyStoreCache struct {
 	cache map[string]string
 	pages list.List
 	load  func(string) string
+	lock sync.Locker
 }
 
 // New creates a new KeyStoreCache
@@ -41,6 +45,8 @@ func (k *KeyStoreCache) Get(key string) string {
 	// Miss - load from database and save it in cache
 	if !ok {
 		val = k.load(key)
+		k.lock.Lock()
+		defer k.lock.Unlock()
 		k.pages.PushFront(key)
 
 		// if cache is full remove the least used item
